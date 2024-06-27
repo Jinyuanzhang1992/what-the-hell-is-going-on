@@ -1,123 +1,43 @@
 "use client";
+import {
+  addUsers,
+  addUsersFromFile,
+  combineParseJsonAndAddUsers,
+  parseJson,
+} from "@src/services";
 import { useState } from "react";
 
-const server = (path: string) => "http://localhost:3010" + path;
-
-async function parseJson(file: File) {
-  const formData = new FormData();
-  formData.append("files", file);
-
-  try {
-    const res = await fetch(server("/parse-json"), {
-      method: "POST",
-      body: formData,
-    });
-
-    return { data: await res.json() };
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(error.message);
-      return { error: error.message };
-    }
-
-    console.error(error);
-    return { error: "wtf is going on" };
-  }
-}
-
-async function addUsers(users: any) {
-  try {
-    const usersString = JSON.stringify(users);
-
-    const res = await fetch(server("/users"), {
-      method: "POST",
-      body: JSON.stringify(users),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    return { data: await res.json() };
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(error.message);
-      return { error: error.message };
-    }
-
-    console.error(error);
-    return { error: "wtf is going on" };
-  }
-}
-
-async function uploadFile(file: File) {
-  const formData = new FormData();
-  formData.append("files", file);
-
-  try {
-    const res = await fetch(server("/parse-users-json"), {
-      method: "POST",
-      body: formData,
-    });
-
-    return { data: await res.json() };
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(error.message);
-      return { error: error.message };
-    }
-
-    console.error(error);
-    return { error: "wtf is going on" };
-  }
-}
-
-async function uploadFile2StageInOneFnc(file: File) {
-  const formData = new FormData();
-  formData.append("files", file);
-
-  try {
-    const parsedJsonRes = await fetch(server("/parse-json"), {
-      method: "POST",
-      body: formData,
-    });
-
-    const usersString = JSON.stringify(await parsedJsonRes.json());
-
-    const res = await fetch(server("/users"), {
-      method: "POST",
-      body: usersString,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    return { data: await res.json() };
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(error.message);
-      return { error: error.message };
-    }
-
-    console.error(error);
-    return { error: "wtf is going on" };
-  }
-}
-
 export default function Home() {
-  const [uploadedUsers, setUploadedUsers] = useState<any[]>([]);
+  const [serverResponse, setUploadedUsers] = useState(
+    "Nothing from server yet"
+  );
 
   const handleFileSubmit = async (file: File) => {
-    await uploadFile(file);
+    const { data, error } = await addUsersFromFile(file);
+    setUploadedUsers(JSON.stringify(data || error, null, 2));
   };
 
   const handle2StageFileSubmit = async (file: File) => {
     const { data, error } = await parseJson(file);
 
     if (data) {
-      await addUsers(data);
+      const { data: _data, error: _error } = await addUsers(data);
+
+      if (_data) {
+        setUploadedUsers(JSON.stringify(_data, null, 2));
+      } else if (_error) {
+        setUploadedUsers(JSON.stringify(_error, null, 2));
+      }
     } else {
       console.error(error);
+      setUploadedUsers(JSON.stringify(error, null, 2));
     }
+  };
+
+  const handle2StageFileSubmitIn1Fnc = async (file: File) => {
+    const { data, error } = await combineParseJsonAndAddUsers(file);
+
+    setUploadedUsers(JSON.stringify(data || error, null, 2));
   };
 
   return (
@@ -126,12 +46,19 @@ export default function Home() {
         What the hell is going on
       </p>
 
-      <div className="w-full flex flex-col">
+      <div className="w-full flex flex-col gap-2">
         <UploadFileForm
           onSubmit={handleFileSubmit}
           on2StageSubmit={handle2StageFileSubmit}
-          on2StageSubmitIn1Fnc={uploadFile2StageInOneFnc}
+          on2StageSubmitIn1Fnc={handle2StageFileSubmitIn1Fnc}
         />
+
+        <div className="flex flex-col border border-neutral-50 rounded-md">
+          <span className="p-2 border-b border-neutral-50">
+            Server Response:
+          </span>
+          <pre className="p-2">{serverResponse}</pre>
+        </div>
       </div>
     </main>
   );
@@ -177,24 +104,24 @@ function UploadFileForm(props: {
       <pre className="p-4 h-64 overflow-y-auto">{preview}</pre>
 
       {file && (
-        <div className="border-t border-neutral-50 p-2 flex">
+        <div className="border-t border-neutral-50 p-2 flex justify-end gap-2">
           <button
             onClick={() => props.onSubmit(file)}
-            className="ml-auto border-2 border-neutral-50 rounded px-2 py-1 hover:bg-neutral-50 transition-colors hover:text-neutral-950"
+            className="border-2 border-neutral-50 rounded px-2 py-1 hover:bg-neutral-50 transition-colors hover:text-neutral-950"
           >
             Submit
           </button>
 
           <button
             onClick={() => props.on2StageSubmit(file)}
-            className="ml-auto border-2 border-neutral-50 rounded px-2 py-1 hover:bg-neutral-50 transition-colors hover:text-neutral-950"
+            className="border-2 border-neutral-50 rounded px-2 py-1 hover:bg-neutral-50 transition-colors hover:text-neutral-950"
           >
             2 Stage Submit
           </button>
 
           <button
             onClick={() => props.on2StageSubmitIn1Fnc(file)}
-            className="ml-auto border-2 border-neutral-50 rounded px-2 py-1 hover:bg-neutral-50 transition-colors hover:text-neutral-950"
+            className="border-2 border-neutral-50 rounded px-2 py-1 hover:bg-neutral-50 transition-colors hover:text-neutral-950"
           >
             2 Stage Submit In 1 Fnc
           </button>

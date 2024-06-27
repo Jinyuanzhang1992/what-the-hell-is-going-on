@@ -3,13 +3,12 @@ const express = require("express");
 const { Env } = require("./utils/env");
 const { z } = require("zod");
 const bodyParser = require("body-parser");
-const bcrypt = require("bcrypt");
 const multer = require("multer");
-const fs = require("fs");
 
 const upload = multer({ dest: "uploads/" });
 
-const mockUsers = require("../mock/data.json");
+const { parseJson } = require("./utils/parser");
+const { processUsers } = require("./user");
 
 const app = express();
 app.use(
@@ -48,56 +47,29 @@ app.post("/parse-json", upload.array("files"), async (req, res) => {
     if (!req.files || req.files.length === 0) {
       throw new Error("Hey, where's the file????");
     }
-
     const { path } = req.files[0];
 
-    fs.readFile(path, "utf8", (err, data) => {
-      if (err) {
-        res.send(`Error reading file: ${err.message}`);
-        return;
-      }
+    const data = await parseJson(path);
 
-      try {
-        const parsedData = JSON.parse(data);
-        res.send(parsedData);
-      } catch (err) {
-        throw new Error("Fk, I can't parse this file");
-      }
-    });
+    res.status(200).send({ message: "yeah, parsed json", data });
+    console.log("done✨✨✨✨✨✨✨");
   } catch (err) {
     res.send(`Something fked up ${err.message}`);
   }
-  console.log("done✨✨✨✨✨✨✨");
 });
 
 app.post("/users", async (req, res) => {
   console.log("processing user");
-  const users = req.body;
+  const data = req.body;
 
   try {
-    const usersWithHashedPasswords = await Promise.all(
-      users.map(async (user) => {
-        console.log("开始加密密码");
-        const hashedPassword = await bcrypt.hash(user.password, 10);
-        console.log("hashedPassword", hashedPassword);
-        const dob = new Date(Date.parse(user.dob.split("T")[0]));
-        console.log("dob", dob);
+    const users = await processUsers(data);
 
-        return {
-          ...user,
-          password: hashedPassword,
-          dob: dob,
-        };
-      })
-    );
-
-    res
-      .status(200)
-      .send({ message: "yeah this work", users: usersWithHashedPasswords });
+    res.status(200).send({ message: "yeah /users work", users });
+    console.log("done✨✨✨✨✨✨✨");
   } catch (error) {
     res.status(400).send(`FKKKKKK ${error.message}`);
   }
-  console.log("done✨✨✨✨✨✨✨");
 });
 
 app.post("/parse-users-json", upload.array("files"), async (req, res) => {
@@ -110,41 +82,17 @@ app.post("/parse-users-json", upload.array("files"), async (req, res) => {
 
     const { path } = req.files[0];
 
-    fs.readFile(path, "utf8", async (err, data) => {
-      if (err) {
-        res.send(`Error reading file: ${err.message}`);
-        return;
-      }
+    const data = await parseJson(path);
+    const users = await processUsers(data);
 
-      try {
-        const users = JSON.parse(data);
-
-        const usersWithHashedPasswords = await Promise.all(
-          users.map(async (user) => {
-            const hashedPassword = await bcrypt.hash(user.password, 10);
-            const dob = new Date(Date.parse(user.dob.split("T")[0]));
-
-            return {
-              ...user,
-              password: hashedPassword,
-              dob: dob,
-            };
-          })
-        );
-
-        res.status(200).send({
-          message: "yeah this whole thing work",
-          users: usersWithHashedPasswords,
-        });
-      } catch (err) {
-        throw new Error("Fk, I can't parse this file");
-      }
+    res.status(200).send({
+      message: "yeah, /parse-users-json work",
+      users,
     });
+    console.log("done✨✨✨✨✨✨✨");
   } catch (err) {
     res.send(`Something fked up ${err.message}`);
   }
-
-  console.log("done✨✨✨✨✨✨✨");
 });
 
 app.listen(Env.Port, () => {
