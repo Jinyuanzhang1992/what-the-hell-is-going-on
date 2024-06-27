@@ -41,23 +41,23 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen px-24 py-36">
+    <main className="flex min-h-screen">
       <p className="fixed left-0 text-3xl font-black uppercase tracking-widest top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
         What the hell is going on
       </p>
 
-      <div className="w-full flex flex-col gap-2">
+      <div className="m-auto w-[min(768px, 80vw)] grid grid-rows-2 gap-2 max-h-[80vh] items-stretch">
         <UploadFileForm
           onSubmit={handleFileSubmit}
           on2StageSubmit={handle2StageFileSubmit}
           on2StageSubmitIn1Fnc={handle2StageFileSubmitIn1Fnc}
         />
 
-        <div className="flex flex-col border border-neutral-50 rounded-md">
+        <div className="flex flex-col border border-neutral-50 rounded-md ">
           <span className="p-2 border-b border-neutral-50">
             Server Response:
           </span>
-          <pre className="p-2">{serverResponse}</pre>
+          <pre className="p-2 overflow-auto">{serverResponse}</pre>
         </div>
       </div>
     </main>
@@ -101,7 +101,7 @@ function UploadFileForm(props: {
         onChange={handleFileUpload}
       />
 
-      <pre className="p-4 h-64 overflow-y-auto">{preview}</pre>
+      <pre className="p-4 flex-1 overflow-y-auto">{preview}</pre>
 
       {file && (
         <div className="border-t border-neutral-50 p-2 flex justify-end gap-2">
