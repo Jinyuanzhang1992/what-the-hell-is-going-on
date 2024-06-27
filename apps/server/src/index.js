@@ -9,6 +9,8 @@ const fs = require("fs");
 
 const upload = multer({ dest: "uploads/" });
 
+const mockUsers = require("../mock/data.json");
+
 const app = express();
 app.use(
   cors({
@@ -41,6 +43,7 @@ app.post("/hash", async (req, res) => {
 });
 
 app.post("/parse-json", upload.array("files"), async (req, res) => {
+  console.log("processing json");
   try {
     if (!req.files || req.files.length === 0) {
       throw new Error("Hey, where's the file????");
@@ -64,9 +67,11 @@ app.post("/parse-json", upload.array("files"), async (req, res) => {
   } catch (err) {
     res.send(`Something fked up ${err.message}`);
   }
+  console.log("done✨✨✨✨✨✨✨");
 });
 
-app.post("/user", async (req, res) => {
+app.post("/users", async (req, res) => {
+  console.log("processing user");
   const users = req.body;
 
   try {
@@ -92,9 +97,12 @@ app.post("/user", async (req, res) => {
   } catch (error) {
     res.status(400).send(`FKKKKKK ${error.message}`);
   }
+  console.log("done✨✨✨✨✨✨✨");
 });
 
 app.post("/parse-users-json", upload.array("files"), async (req, res) => {
+  console.log("processing json then give it to user");
+
   try {
     if (!req.files || req.files.length === 0) {
       throw new Error("Hey, where's the file????");
@@ -135,6 +143,8 @@ app.post("/parse-users-json", upload.array("files"), async (req, res) => {
   } catch (err) {
     res.send(`Something fked up ${err.message}`);
   }
+
+  console.log("done✨✨✨✨✨✨✨");
 });
 
 app.listen(Env.Port, () => {

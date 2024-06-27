@@ -3,21 +3,38 @@ import { useState } from "react";
 
 const server = (path: string) => "http://localhost:3010" + path;
 
-async function uploadFile2Stage(file: File) {
+async function parseJson(file: File) {
   const formData = new FormData();
   formData.append("files", file);
 
   try {
-    const parseJsonRes = await fetch(server("/parse-json"), {
+    const res = await fetch(server("/parse-json"), {
       method: "POST",
       body: formData,
     });
 
-    const parsedJson = await parseJsonRes.json();
+    return { data: await res.json() };
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(error.message);
+      return { error: error.message };
+    }
+
+    console.error(error);
+    return { error: "wtf is going on" };
+  }
+}
+
+async function addUsers(users: any) {
+  try {
+    const usersString = JSON.stringify(users);
 
     const res = await fetch(server("/users"), {
       method: "POST",
-      body: JSON.stringify(parsedJson),
+      body: JSON.stringify(users),
+      headers: {
+        "Content-Type": "application/json",
+      },
     });
 
     return { data: await res.json() };
@@ -54,13 +71,53 @@ async function uploadFile(file: File) {
   }
 }
 
+async function uploadFile2StageInOneFnc(file: File) {
+  const formData = new FormData();
+  formData.append("files", file);
+
+  try {
+    const parsedJsonRes = await fetch(server("/parse-json"), {
+      method: "POST",
+      body: formData,
+    });
+
+    const usersString = JSON.stringify(await parsedJsonRes.json());
+
+    const res = await fetch(server("/users"), {
+      method: "POST",
+      body: usersString,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    return { data: await res.json() };
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(error.message);
+      return { error: error.message };
+    }
+
+    console.error(error);
+    return { error: "wtf is going on" };
+  }
+}
+
 export default function Home() {
+  const [uploadedUsers, setUploadedUsers] = useState<any[]>([]);
+
   const handleFileSubmit = async (file: File) => {
-    const { data, error } = await uploadFile(file);
+    await uploadFile(file);
   };
 
   const handle2StageFileSubmit = async (file: File) => {
-    const { data, error } = await uploadFile2Stage(file);
+    const { data, error } = await parseJson(file);
+
+    if (data) {
+      await addUsers(data);
+    } else {
+      console.error(error);
+    }
   };
 
   return (
@@ -73,6 +130,7 @@ export default function Home() {
         <UploadFileForm
           onSubmit={handleFileSubmit}
           on2StageSubmit={handle2StageFileSubmit}
+          on2StageSubmitIn1Fnc={uploadFile2StageInOneFnc}
         />
       </div>
     </main>
@@ -82,6 +140,7 @@ export default function Home() {
 function UploadFileForm(props: {
   onSubmit: (file: File) => void;
   on2StageSubmit: (file: File) => void;
+  on2StageSubmitIn1Fnc: (file: File) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("Nothing here yet");
@@ -131,6 +190,13 @@ function UploadFileForm(props: {
             className="ml-auto border-2 border-neutral-50 rounded px-2 py-1 hover:bg-neutral-50 transition-colors hover:text-neutral-950"
           >
             2 Stage Submit
+          </button>
+
+          <button
+            onClick={() => props.on2StageSubmitIn1Fnc(file)}
+            className="ml-auto border-2 border-neutral-50 rounded px-2 py-1 hover:bg-neutral-50 transition-colors hover:text-neutral-950"
+          >
+            2 Stage Submit In 1 Fnc
           </button>
         </div>
       )}
